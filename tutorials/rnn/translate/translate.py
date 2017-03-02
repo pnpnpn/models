@@ -108,6 +108,7 @@ def read_data(source_path, target_path, max_size=None):
         if counter % 100000 == 0:
           print("  reading data line %d" % counter)
           sys.stdout.flush()
+        # PN: these are already token-ids. See prepare_data in data_utils.py
         source_ids = [int(x) for x in source.split()]
         target_ids = [int(x) for x in target.split()]
         target_ids.append(data_utils.EOS_ID)
@@ -150,6 +151,9 @@ def train():
   to_train = None
   from_dev = None
   to_dev = None
+
+  # PN: what are all these from_train, to_train data?
+  # For example, `from` is for English and `to` is French here
   if FLAGS.from_train_data and FLAGS.to_train_data:
     from_train_data = FLAGS.from_train_data
     to_train_data = FLAGS.to_train_data

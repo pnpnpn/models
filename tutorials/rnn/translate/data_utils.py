@@ -31,7 +31,7 @@ import tensorflow as tf
 # Special vocabulary symbols - we always put them at the start.
 _PAD = b"_PAD"
 _GO = b"_GO"
-_EOS = b"_EOS"
+_EOS = b"_EOS"  # PN: end of sentence
 _UNK = b"_UNK"
 _START_VOCAB = [_PAD, _GO, _EOS, _UNK]
 
