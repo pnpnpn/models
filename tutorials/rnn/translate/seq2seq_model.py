@@ -49,13 +49,13 @@ class Seq2SeqModel(object):
                buckets,
                size,
                num_layers,
-               max_gradient_norm,
+               max_gradient_norm,  # PN: don't know what clipping means
                batch_size,
                learning_rate,
                learning_rate_decay_factor,
                use_lstm=False,
                num_samples=512,
-               forward_only=False,
+               forward_only=False,  # PN: why turn this "on" during decode mode?
                dtype=tf.float32):
     """Create the model.
 
@@ -95,18 +95,24 @@ class Seq2SeqModel(object):
     softmax_loss_function = None
     # Sampled softmax only makes sense if we sample less than vocabulary size.
     if num_samples > 0 and num_samples < self.target_vocab_size:
+      # PN: `size` is the number of units of each layer. This is probably
+      # because we multiple w_t to the output from the last layer.
       w_t = tf.get_variable("proj_w", [self.target_vocab_size, size], dtype=dtype)
       w = tf.transpose(w_t)
       b = tf.get_variable("proj_b", [self.target_vocab_size], dtype=dtype)
       output_projection = (w, b)
 
       def sampled_loss(labels, inputs):
+        # PN: What is labels here? It looks like the reshape here
+        # would flatten labels to a column vector.
         labels = tf.reshape(labels, [-1, 1])
         # We need to compute the sampled_softmax_loss using 32bit floats to
         # avoid numerical instabilities.
+        # PN: default dtype is float32 anyway
         local_w_t = tf.cast(w_t, tf.float32)
         local_b = tf.cast(b, tf.float32)
         local_inputs = tf.cast(inputs, tf.float32)
+        # PN: What is num_samples / num_sampled here? Why are we using 512?
         return tf.cast(
             tf.nn.sampled_softmax_loss(
                 weights=local_w_t,
@@ -124,6 +130,7 @@ class Seq2SeqModel(object):
     if use_lstm:
       def single_cell():
         return tf.contrib.rnn.BasicLSTMCell(size)
+
     cell = single_cell()
     if num_layers > 1:
       cell = tf.contrib.rnn.MultiRNNCell([single_cell() for _ in range(num_layers)])
