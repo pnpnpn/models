@@ -55,7 +55,7 @@ class Seq2SeqModel(object):
                learning_rate_decay_factor,
                use_lstm=False,
                num_samples=512,
-               forward_only=False,  # PN: why turn this "on" during decode mode?
+               forward_only=False,  # PN: why turn this "on" during decode mode? Decoding only needs to go forward without backprop
                dtype=tf.float32):
     """Create the model.
 
@@ -104,7 +104,8 @@ class Seq2SeqModel(object):
 
       def sampled_loss(labels, inputs):
         # PN: What is labels here? It looks like the reshape here
-        # would flatten labels to a column vector.
+        # would flatten labels to a column vector (since -1 means to
+        # compute dimension so that total size remains constant).
         labels = tf.reshape(labels, [-1, 1])
         # We need to compute the sampled_softmax_loss using 32bit floats to
         # avoid numerical instabilities.
@@ -113,6 +114,7 @@ class Seq2SeqModel(object):
         local_b = tf.cast(b, tf.float32)
         local_inputs = tf.cast(inputs, tf.float32)
         # PN: What is num_samples / num_sampled here? Why are we using 512?
+        # PN: According to the tutorial, sampled-softmax is from https://arxiv.org/abs/1412.2007
         return tf.cast(
             tf.nn.sampled_softmax_loss(
                 weights=local_w_t,
@@ -145,14 +147,20 @@ class Seq2SeqModel(object):
           num_decoder_symbols=target_vocab_size,
           embedding_size=size,
           output_projection=output_projection,
-          feed_previous=do_decode,
+          feed_previous=do_decode,  # PN: use feed_previous when under decode mode
           dtype=dtype)
 
     # Feeds for inputs.
+    # PN: the inputs are actually tf.placeholder
     self.encoder_inputs = []
     self.decoder_inputs = []
-    self.target_weights = []
+    self.target_weights = []  # PN: what are these target weights?
+
+    # PN: recall that the largest bucket is (40, 50), i.e. English
+    # with 40 tokens (words) and 50 tokens.
     for i in xrange(buckets[-1][0]):  # Last bucket is the biggest one.
+      # PN: Does shape=[None] means a row vector? Why don't we just specify
+      # the shape here. We know the embedding size.
       self.encoder_inputs.append(tf.placeholder(tf.int32, shape=[None],
                                                 name="encoder{0}".format(i)))
     for i in xrange(buckets[-1][1] + 1):
