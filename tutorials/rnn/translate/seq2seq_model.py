@@ -169,24 +169,39 @@ class Seq2SeqModel(object):
       self.target_weights.append(tf.placeholder(dtype, shape=[None],
                                                 name="weight{0}".format(i)))
 
+    # PN: target_weights and decoder_inputs are the same dimension?
+    # PN: targets array length is one shorter than that of target_weights.
+
     # Our targets are decoder inputs shifted by one.
+    # PN: It's easy to see when you draw it out. Specifically,
+    # self.decoder_inputs[0] is always <GO>
     targets = [self.decoder_inputs[i + 1]
                for i in xrange(len(self.decoder_inputs) - 1)]
 
     # Training outputs and losses.
     if forward_only:
+      # PN: decoding mode: This is very much the same as training,
+      # except that the do_decode boolean is True and the output_projection
+      # code.
+      # PN: Is the decoder_inputs garbage here?
       self.outputs, self.losses = tf.contrib.legacy_seq2seq.model_with_buckets(
           self.encoder_inputs, self.decoder_inputs, targets,
           self.target_weights, buckets, lambda x, y: seq2seq_f(x, y, True),
           softmax_loss_function=softmax_loss_function)
       # If we use output projection, we need to project outputs for decoding.
+      # PN: this is for sampled-softmax
       if output_projection is not None:
         for b in xrange(len(buckets)):
+          # PN: output_project[0] is the weight `w`, while [1] is the
+          # bias `b`.
           self.outputs[b] = [
               tf.matmul(output, output_projection[0]) + output_projection[1]
               for output in self.outputs[b]
           ]
     else:
+      # PN: training mode
+      # PN: We don't give a shit about the projecting outputs -- this is
+      # probably because we will use decoder_inputs instead of previous output.
       self.outputs, self.losses = tf.contrib.legacy_seq2seq.model_with_buckets(
           self.encoder_inputs, self.decoder_inputs, targets,
           self.target_weights, buckets,
