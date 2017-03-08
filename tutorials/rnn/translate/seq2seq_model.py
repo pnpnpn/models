@@ -209,8 +209,9 @@ class Seq2SeqModel(object):
           softmax_loss_function=softmax_loss_function)
 
     # Gradients and SGD update operation for training the model.
-    params = tf.trainable_variables()
+    params = tf.trainable_variables()  # PN: variables are default to trainable=True
     if not forward_only:
+      # PN: training mode
       self.gradient_norms = []
       self.updates = []
       opt = tf.train.GradientDescentOptimizer(self.learning_rate)
@@ -218,6 +219,7 @@ class Seq2SeqModel(object):
         gradients = tf.gradients(self.losses[b], params)
         clipped_gradients, norm = tf.clip_by_global_norm(gradients,
                                                          max_gradient_norm)
+        # PN: gradient norms and updates for each bucket
         self.gradient_norms.append(norm)
         self.updates.append(opt.apply_gradients(
             zip(clipped_gradients, params), global_step=self.global_step))
