@@ -211,7 +211,7 @@ class Seq2SeqModel(object):
     # Gradients and SGD update operation for training the model.
     params = tf.trainable_variables()  # PN: variables are default to trainable=True
     if not forward_only:
-      # PN: training mode
+      # PN: training mode. So complicated...
       self.gradient_norms = []
       self.updates = []
       opt = tf.train.GradientDescentOptimizer(self.learning_rate)
